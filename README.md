@@ -76,7 +76,6 @@ Thresholds: adaptive (calibrated per dialect)
   10 CI chunks, 9806 words, 1521 sentences
 
   WORD ATTESTATION
-  ───────────────────────────────────────────────────────
 
   Against chclass.txt:
     Dialect tokens: 9405/10000 (94.0%)
@@ -86,7 +85,6 @@ Thresholds: adaptive (calibrated per dialect)
     Unattested:     alfchy, apchey, chaikhy, charal, chcheaiin, chctych, chdqoty, cheas, chee, cheekal, cheekchody, cheekol, cheetchy, chekcheor, chekeeschy
 
   FOUR-SIGNATURE EVALUATION
-  ───────────────────────────────────────────────────────
 
   Sig1  E->S:      66.4%  [65.4, 67.8]
         VMS ref:   71.0%  [67.2, 74.8]
@@ -107,15 +105,13 @@ Thresholds: adaptive (calibrated per dialect)
         VMS ref:   Zipfian  R²=0.863  CV=1.45
         Criterion: non-Plateau (ref=Zipfian)
 
-  ───────────────────────────────────────────────────────
   VERDICT (calibrated to Currier A):
-  ───────────────────────────────────────────────────────
+
     E->S        : ✓ PASS      [range [56, 86]%]
     Bilat       : ✓ PASS      [must have bilateral (ref has it)]
     MI          : ✓ PASS      [range [0.293, 1.171]]
     Shape       : ✓ PASS      [non-Plateau (ref=Zipfian)]
-  ───────────────────────────────────────────────────────
-    Joint (adaptive):   4/4
+
 
   Reference values:
     VMS Currier A: E->S=71.0%  MI=0.5856  Bilateral=YES  Zipfian
