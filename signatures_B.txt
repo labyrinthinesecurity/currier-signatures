@@ -1,0 +1,280 @@
+
+  Calibration tokenizer: grille.py EVA tokenizer
+  Loading cached calibration from vms_calibration.json
+
+######################################################################
+#  VMS ABLATION SUITE v2.7
+#  runs=20  seed=42  words=37000  mode=FAST (3 shuffles)
+#  baseline: bridge=2  topk=30
+#  language: Currier B
+#  dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  Intermediate
+#
+#  Speedups vs v2.5:
+#    pre-tokenize once per corpus  (~55x on tokenizer)
+#    sparse pair lookup in Markov  (~6x on chain build)
+#    3 MI shuffles in --fast mode  (~3x on MI computation)
+#
+#  v2.7: per-dialect calibration with --language A|B
+#    adaptive fail-fast, joint profile match, Cohen's d
+#    bilateral from full corpus, CI metrics from chunks
+######################################################################
+
+======================================================================
+  PART 1: MAIN ABLATIONS
+======================================================================
+
+  Running: BASELINE  (20 runs, 58 graphemes, vocab=1000)...  E->S=64.1%  MI=0.1694
+  Running: A: Overlapping pools (~60%)  (20 runs, 58 graphemes, vocab=1000)...  E->S=100.0%  MI=0.0009
+  Running: B: Flat distributions  (20 runs, 58 graphemes, vocab=1000)...  E->S=97.3%  MI=1.9598
+  Running: C: Random word order  (20 runs, 58 graphemes, vocab=1000)...  E->S=52.1%  MI=0.0013
+  Running: D: Single pool  (20 runs, 58 graphemes, vocab=0)...  E->S=0.0%  MI=0.0771
+  Running: E: Variable boundary  (20 runs, 58 graphemes, vocab=1000)...  E->S=70.1%  MI=0.1554
+  Running: F: Unilateral extremity  (20 runs, 58 graphemes, vocab=1000)...  E->S=95.8%  MI=0.1093
+  Running: G: Agglutinative mimic  (20 runs, 33 graphemes, vocab=1000)...  E->S=100.0%  MI=0.0155
+  Running: H: Templatic mimic  (20 runs, 30 graphemes, vocab=1000)...  E->S=99.9%  MI=0.0643
+  Running: I: High-entropy natural  (20 runs, 50 graphemes, vocab=1000)...  E->S=100.0%  MI=0.0011
+  Running: CTRL: Random strings  (20 runs, 26 graphemes, vocab=2000)...  E->S=0.0%  MI=0.0141
+  Running: CTRL: English...  done.
+
+======================================================================================================================================================
+  ABLATION RESULTS  (95% bootstrap CIs, Cohen's d vs VMS)  [dialect-calibrated]
+======================================================================================================================================================
+  Config                                             E->S% [CI]       d    Se   Ee  Bil%                    MI [CI]       d         Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------------------------------------
+  BASELINE                                   64.1 [ 56.7, 71.2]    -0.0     8    5   100     0.1694 [0.1561,0.1836]   -10.3  Intermediate     3/4
+  A: Overlapping pools (~60%)               100.0 [100.0,100.0]     N/A     7    7   100     0.0009 [0.0008,0.0010] -1790.5       Zipfian     2/4
+  B: Flat distributions                      97.3 [ 96.9, 97.8]   +30.8     8    5   100     1.9598 [1.9294,1.9914]   +20.8       Zipfian     3/4
+  C: Random word order                       52.1 [ 45.0, 59.1]    -0.7     9    5   100     0.0013 [0.0013,0.0014] -3102.4  Intermediate     3/4
+  D: Single pool                              0.0 [  0.0,  0.0]     N/A     0    0     0     0.0771 [0.0763,0.0779]  -226.2       Plateau     0/4
+  E: Variable boundary                       70.1 [ 61.6, 78.0]    +0.3     8    5   100     0.1554 [0.1310,0.1798]    -6.1  Intermediate     3/4
+  F: Unilateral extremity                    95.8 [ 93.7, 97.5]    +7.2     9    5   100     0.1093 [0.0899,0.1288]    -9.0       Zipfian     2/4
+  G: Agglutinative mimic                    100.0 [100.0,100.0]     N/A     6    6   100     0.0155 [0.0103,0.0210]   -38.2       Zipfian     2/4
+  H: Templatic mimic                         99.9 [ 99.7,100.0]   +79.1     8    8   100     0.0643 [0.0548,0.0758]   -17.7       Zipfian     2/4
+  I: High-entropy natural                   100.0 [100.0,100.0]     N/A     8    8   100     0.0011 [0.0009,0.0012] -1423.7       Zipfian     2/4
+  CTRL: Random strings                        0.0 [  0.0,  0.0]     N/A     0    0     0     0.0141 [0.0137,0.0144]  -663.3       Plateau     0/4
+  CTRL: English (Moby Dick)                  31.4 [ 31.4, 31.4]     N/A     0    0     0     1.2594 [1.2594,1.2594]     N/A  Intermediate     2/4
+
+  VMS (dialect ref)                            64.2779818078154     ref     3    7   YES         0.4980070427841703     ref  Intermediate    4/4
+
+
+====================================================================================================
+  INTERPRETATION MATRIX  [dialect-calibrated]
+====================================================================================================
+
+  Config                                E->S  Bilat     MI   Zipf   Joint
+  ----------------------------------------------------------------------
+  BASELINE                                ok     ok      ~     ok      3/4
+  A: Overlapping pools (~60%)              x     ok      x     ok      2/4
+  B: Flat distributions                    x     ok     ok     ok      3/4
+  C: Random word order                    ok     ok      x     ok      3/4
+  D: Single pool                           x      x      ~      x      0/4
+  E: Variable boundary                    ok     ok      ~     ok      3/4
+  F: Unilateral extremity                  x     ok      ~     ok      2/4
+  G: Agglutinative mimic                   x     ok      x     ok      2/4
+  H: Templatic mimic                       x     ok      ~     ok      2/4
+  I: High-entropy natural                  x     ok      x     ok      2/4
+  CTRL: Random strings                     x      x      x      ~      0/4
+  CTRL: English (Moby Dick)                x      x     ok     ok      2/4
+
+  ok=VMS-like  ~=marginal  x=absent
+  Sig1: E->S 50-79%  Sig2: bilateral >50% runs  Sig3: MI>0.25  Sig4: non-Plateau
+
+======================================================================
+  PART 2: SENSITIVITY
+======================================================================
+
+
+  --- Pool Overlap ---
+  Running: S1: overlap=0%  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S1: overlap=2%  (20 runs)...  E->S=97.7%  MI=0.1421
+  Running: S1: overlap=5%  (20 runs)...  E->S=97.7%  MI=0.1421
+  Running: S1: overlap=8%  (20 runs)...  E->S=97.7%  MI=0.1421
+  Running: S1: overlap=10%  (20 runs)...  E->S=97.7%  MI=0.1421
+  Running: S1: overlap=15%  (20 runs)...  E->S=97.7%  MI=0.1421
+  Running: S1: overlap=20%  (20 runs)...  E->S=97.7%  MI=0.1421
+  Running: S1: overlap=30%  (20 runs)...  E->S=97.7%  MI=0.1421
+  Running: S1: overlap=50%  (20 runs)...  E->S=89.5%  MI=0.0870
+  Running: D: Single pool  (20 runs)...  E->S=0.0%  MI=0.0771
+
+==================================================================================================================================
+  SENSITIVITY: Pool Overlap  [dialect-calibrated]
+==================================================================================================================================
+
+  Config                                      E->S% [CI]  Bil%                   MI [CI]     R2     CV        Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------
+  S1: overlap=0%                      64.1 [ 56.9, 71.3]   100    0.1694 [0.1563,0.1831]  0.828   1.07 Intermediate     3/4
+  S1: overlap=2%                      97.7 [ 96.4, 98.8]   100    0.1421 [0.1264,0.1595]  0.834   1.38      Zipfian     2/4
+  S1: overlap=5%                      97.7 [ 96.4, 98.7]   100    0.1421 [0.1269,0.1598]  0.834   1.38      Zipfian     2/4
+  S1: overlap=8%                      97.7 [ 96.4, 98.8]   100    0.1421 [0.1269,0.1598]  0.834   1.38      Zipfian     2/4
+  S1: overlap=10%                     97.7 [ 96.4, 98.7]   100    0.1421 [0.1266,0.1599]  0.834   1.38      Zipfian     2/4
+  S1: overlap=15%                     97.7 [ 96.4, 98.8]   100    0.1421 [0.1265,0.1597]  0.834   1.38      Zipfian     2/4
+  S1: overlap=20%                     97.7 [ 96.4, 98.7]   100    0.1421 [0.1269,0.1588]  0.834   1.38      Zipfian     2/4
+  S1: overlap=30%                     97.7 [ 96.4, 98.7]   100    0.1421 [0.1263,0.1601]  0.834   1.38      Zipfian     2/4
+  S1: overlap=50%                     89.5 [ 85.2, 93.2]   100    0.0870 [0.0731,0.1026]  0.834   1.37      Zipfian     2/4
+  D: Single pool                       0.0 [  0.0,  0.0]     0    0.0771 [0.0764,0.0779]  0.686   0.05      Plateau     0/4
+
+  Dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  R2=0.805  CV=1.53  Intermediate
+
+  --- Slot Count ---
+  Running: S2: slots=2+2  (20 runs)...  E->S=99.6%  MI=0.0695
+  Running: S2: slots=4+4  (20 runs)...  E->S=99.6%  MI=0.0037
+  Running: S2: slots=5+5  (20 runs)...  E->S=100.0%  MI=0.0007
+  Running: S2: slots=6+6  (20 runs)...  E->S=100.0%  MI=0.0033
+  Running: S2: slots=8+8  (20 runs)...  E->S=100.0%  MI=0.0002
+  Running: S2: slots=10+10  (20 runs)...  E->S=100.0%  MI=0.0001
+
+==================================================================================================================================
+  SENSITIVITY: Slot Count  [dialect-calibrated]
+==================================================================================================================================
+
+  Config                                      E->S% [CI]  Bil%                   MI [CI]     R2     CV        Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------
+  S2: slots=2+2                       99.6 [ 99.2, 99.9]   100    0.0695 [0.0539,0.0855]  0.794   1.52 Intermediate     2/4
+  S2: slots=4+4                       99.6 [ 98.9,100.0]   100    0.0037 [0.0025,0.0052]  0.806   1.34 Intermediate     2/4
+  S2: slots=5+5                      100.0 [100.0,100.0]   100    0.0007 [0.0006,0.0008]  0.883   1.20      Zipfian     2/4
+  S2: slots=6+6                      100.0 [100.0,100.0]   100    0.0033 [0.0019,0.0053]  0.865   0.98      Zipfian     2/4
+  S2: slots=8+8                      100.0 [100.0,100.0]   100    0.0002 [0.0002,0.0003]  0.875   0.82 Intermediate     2/4
+  S2: slots=10+10                    100.0 [100.0,100.0]   100    0.0001 [0.0001,0.0002]  0.815   0.66 Intermediate     2/4
+
+  Dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  R2=0.805  CV=1.53  Intermediate
+
+  --- Zipf Exponent ---
+  Running: S3: zipf_alpha=0.0  (20 runs)...  E->S=80.8%  MI=0.1816
+  Running: S3: zipf_alpha=0.5  (20 runs)...  E->S=65.8%  MI=0.1769
+  Running: S3: zipf_alpha=1.0  (20 runs)...  E->S=71.1%  MI=0.1854
+  Running: S3: zipf_alpha=1.5  (20 runs)...  E->S=62.6%  MI=0.1756
+  Running: S3: zipf_alpha=2.0  (20 runs)...  E->S=70.9%  MI=0.1876
+
+==================================================================================================================================
+  SENSITIVITY: Zipf Exponent  [dialect-calibrated]
+==================================================================================================================================
+
+  Config                                      E->S% [CI]  Bil%                   MI [CI]     R2     CV        Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------
+  S3: zipf_alpha=0.0                  80.8 [ 74.2, 86.2]   100    0.1816 [0.1668,0.1973]  0.819   1.13 Intermediate     2/4
+  S3: zipf_alpha=0.5                  65.8 [ 56.3, 74.5]   100    0.1769 [0.1541,0.1997]  0.845   1.15 Intermediate     3/4
+  S3: zipf_alpha=1.0                  71.1 [ 62.9, 79.0]   100    0.1854 [0.1649,0.2067]  0.786   1.13 Intermediate     3/4
+  S3: zipf_alpha=1.5                  62.6 [ 51.7, 72.4]   100    0.1756 [0.1599,0.1919]  0.817   1.17      Zipfian     3/4
+  S3: zipf_alpha=2.0                  70.9 [ 61.3, 79.9]   100    0.1876 [0.1689,0.2065]  0.836   1.25      Zipfian     3/4
+
+  Dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  R2=0.805  CV=1.53  Intermediate
+
+  --- Vocabulary Size ---
+  Running: S4: vocab=200  (20 runs)...  E->S=68.1%  MI=0.1762
+  Running: S4: vocab=500  (20 runs)...  E->S=64.5%  MI=0.1697
+  Running: S4: vocab=1000  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S4: vocab=2000  (20 runs)...  E->S=78.4%  MI=0.1766
+  Running: S4: vocab=5000  (20 runs)...  E->S=67.4%  MI=0.1763
+
+==================================================================================================================================
+  SENSITIVITY: Vocabulary Size  [dialect-calibrated]
+==================================================================================================================================
+
+  Config                                      E->S% [CI]  Bil%                   MI [CI]     R2     CV        Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------
+  S4: vocab=200                       68.1 [ 57.9, 76.8]   100    0.1762 [0.1566,0.1962]  0.836   1.22      Zipfian     3/4
+  S4: vocab=500                       64.5 [ 55.0, 73.1]   100    0.1697 [0.1528,0.1849]  0.798   1.06 Intermediate     3/4
+  S4: vocab=1000                      64.1 [ 56.9, 71.0]   100    0.1694 [0.1560,0.1830]  0.828   1.07 Intermediate     3/4
+  S4: vocab=2000                      78.4 [ 72.2, 83.9]   100    0.1766 [0.1570,0.1962]  0.880   1.20      Zipfian     3/4
+  S4: vocab=5000                      67.4 [ 58.0, 75.4]   100    0.1763 [0.1607,0.1918]  0.791   1.09 Intermediate     3/4
+
+  Dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  R2=0.805  CV=1.53  Intermediate
+
+  --- Boundary Pair Strength  [S5] ---
+  Running: S5: pair_str=0.0  (20 runs)...  E->S=58.9%  MI=0.0013
+  Running: S5: pair_str=1.0  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S5: pair_str=3.0  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S5: pair_str=5.0  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S5: pair_str=10.0  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S5: pair_str=20.0  (20 runs)...  E->S=64.1%  MI=0.1694
+
+==================================================================================================================================
+  SENSITIVITY: Boundary Pair Strength  [S5]  [dialect-calibrated]
+==================================================================================================================================
+
+  Config                                      E->S% [CI]  Bil%                   MI [CI]     R2     CV        Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------
+  S5: pair_str=0.0                    58.9 [ 50.1, 67.0]   100    0.0013 [0.0012,0.0013]  0.864   1.12      Zipfian     3/4
+  S5: pair_str=1.0                    64.1 [ 57.2, 71.2]   100    0.1694 [0.1556,0.1833]  0.828   1.07 Intermediate     3/4
+  S5: pair_str=3.0                    64.1 [ 57.3, 70.9]   100    0.1694 [0.1555,0.1829]  0.828   1.07 Intermediate     3/4
+  S5: pair_str=5.0                    64.1 [ 57.2, 70.9]   100    0.1694 [0.1553,0.1830]  0.828   1.07 Intermediate     3/4
+  S5: pair_str=10.0                   64.1 [ 56.9, 70.7]   100    0.1694 [0.1557,0.1833]  0.828   1.07 Intermediate     3/4
+  S5: pair_str=20.0                   64.1 [ 57.3, 70.5]   100    0.1694 [0.1557,0.1832]  0.828   1.07 Intermediate     3/4
+
+  Dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  R2=0.805  CV=1.53  Intermediate
+
+  --- Bridge Zone Width  [S6] ---
+  Running: S6: bridge=0  (20 runs)...  E->S=100.0%  MI=0.2748
+  Running: S6: bridge=1  (20 runs)...  E->S=75.5%  MI=0.1793
+  Running: S6: bridge=2  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S6: bridge=3  (20 runs)...  E->S=66.4%  MI=0.1727
+  Running: S6: bridge=5  (20 runs)...  E->S=60.2%  MI=0.1485
+  Running: S6: bridge=10  (20 runs)...  E->S=60.2%  MI=0.1485
+
+==================================================================================================================================
+  SENSITIVITY: Bridge Zone Width  [S6]  [dialect-calibrated]
+==================================================================================================================================
+
+  Config                                      E->S% [CI]  Bil%                   MI [CI]     R2     CV        Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------
+  S6: bridge=0                       100.0 [100.0,100.0]   100    0.2748 [0.2452,0.3068]  0.802   1.44 Intermediate     3/4
+  S6: bridge=1                        75.5 [ 64.8, 85.6]   100    0.1793 [0.1591,0.1997]  0.830   1.11 Intermediate     3/4
+  S6: bridge=2                        64.1 [ 57.3, 70.6]   100    0.1694 [0.1551,0.1828]  0.828   1.07 Intermediate     3/4
+  S6: bridge=3                        66.4 [ 59.7, 73.0]   100    0.1727 [0.1545,0.1914]  0.880   1.20      Zipfian     3/4
+  S6: bridge=5                        60.2 [ 52.1, 67.2]   100    0.1485 [0.1321,0.1648]  0.828   1.28 Intermediate     3/4
+  S6: bridge=10                       60.2 [ 52.5, 67.5]   100    0.1485 [0.1320,0.1653]  0.828   1.28 Intermediate     3/4
+
+  Dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  R2=0.805  CV=1.53  Intermediate
+
+  --- Sparse Markov Top-K  [S7] ---
+  Running: S7: top_k=5  (20 runs)...  E->S=78.2%  MI=0.2181
+  Running: S7: top_k=10  (20 runs)...  E->S=69.5%  MI=0.2024
+  Running: S7: top_k=20  (20 runs)...  E->S=64.6%  MI=0.1722
+  Running: S7: top_k=30  (20 runs)...  E->S=64.1%  MI=0.1694
+  Running: S7: top_k=50  (20 runs)...  E->S=63.5%  MI=0.1656
+  Running: S7: top_k=100  (20 runs)...  E->S=61.1%  MI=0.1662
+  Running: S7: top_k=1000  (20 runs)...  E->S=55.6%  MI=0.1392
+
+==================================================================================================================================
+  SENSITIVITY: Sparse Markov Top-K  [S7]  [dialect-calibrated]
+==================================================================================================================================
+
+  Config                                      E->S% [CI]  Bil%                   MI [CI]     R2     CV        Shape  Joint
+  ----------------------------------------------------------------------------------------------------------------------
+  S7: top_k=5                         78.2 [ 72.0, 85.1]   100    0.2181 [0.1886,0.2458]  0.711   1.02 Intermediate     3/4
+  S7: top_k=10                        69.5 [ 60.6, 78.1]   100    0.2024 [0.1777,0.2276]  0.761   1.11 Intermediate     3/4
+  S7: top_k=20                        64.6 [ 57.1, 71.7]   100    0.1722 [0.1555,0.1885]  0.762   1.10      Zipfian     3/4
+  S7: top_k=30                        64.1 [ 57.2, 71.0]   100    0.1694 [0.1552,0.1836]  0.828   1.07 Intermediate     3/4
+  S7: top_k=50                        63.5 [ 56.6, 70.0]   100    0.1656 [0.1539,0.1785]  0.832   1.03      Zipfian     3/4
+  S7: top_k=100                       61.1 [ 54.2, 67.2]   100    0.1662 [0.1551,0.1777]  0.782   0.99 Intermediate     3/4
+  S7: top_k=1000                      55.6 [ 49.1, 61.9]   100    0.1392 [0.1296,0.1503]  0.767   0.88 Intermediate     3/4
+
+  Dialect ref: E->S=64.3%  MI=0.4980  Bilateral=YES  R2=0.805  CV=1.53  Intermediate
+
+======================================================================
+  PART 3: FALSIFICATION
+======================================================================
+
+  Running: BASELINE  (20 runs)...  done.
+  Running: G: Agglutinative mimic  (20 runs)...  done.
+  Running: H: Templatic mimic  (20 runs)...  done.
+  Running: I: High-entropy natural  (20 runs)...  done.
+
+========================================================================================================================
+  FALSIFICATION: CAN NEAR-MISS GENERATORS APPROACH THE VMS JOINT PROFILE?  [dialect-calibrated]
+========================================================================================================================
+
+  Config                                 E->S%  d(E->S)       MI    d(MI)   Bil%        Shape  Joint
+  -----------------------------------------------------------------------------------------------
+  BASELINE                                64.1     -0.0   0.1694    -10.3    100 Intermediate     3/4
+  G: Agglutinative mimic                 100.0      N/A   0.0155    -38.2    100      Zipfian     2/4
+  H: Templatic mimic                      99.9    +79.1   0.0643    -17.7    100      Zipfian     2/4
+  I: High-entropy natural                100.0      N/A   0.0011  -1423.7    100      Zipfian     2/4
+  VMS (dialect ref)                   64.2779818078154      ref 0.4980070427841703      ref    YES Intermediate    4/4
+
+  |d| < 0.5 small  0.5-0.8 medium  > 0.8 large
+
+######################################################################
+#  COMPLETE
+######################################################################
+
